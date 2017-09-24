@@ -1,0 +1,11 @@
+{
+  "name": "cordova-googlevision-plugin",
+  "version": "1.0.0",
+  "cordova": {
+    "id": "cordova-googlevision-plugin",
+    "platforms": [
+      "android"
+    ]
+  },
+  "description": "An unofficial plugin for using Google Vision with cordova."
+}
