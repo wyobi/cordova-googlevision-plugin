@@ -8,7 +8,6 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import android.content.Intent;
-import com.erikeuserr.testapp.GoogleVisionActivity;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -23,15 +22,22 @@ public class GoogleVisionPlugin extends CordovaPlugin {
     public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
         if(action.equalsIgnoreCase("detect")) {
             this.callbackContext = callbackContext;
-            final Intent intent = new Intent(cordova.getActivity().getApplicationContext(), GoogleVisionActivity.class);
 
-            cordova.setActivityResultCallback (this);
-            cordova.getActivity().startActivityForResult(intent, 1);
-            return true;
+            if(args.getString(0) != null){
+                final String regexPatternString = args.getString(0);
+                final Intent intent = new Intent(cordova.getActivity().getApplicationContext(), GoogleVisionActivity.class);
+                intent.putExtra("regexPattern", regexPatternString);
+
+                cordova.setActivityResultCallback (this);
+                cordova.getActivity().startActivityForResult(intent, 1);
+                return true;
+            }
         }
 
         return false;
     }
+
+
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {

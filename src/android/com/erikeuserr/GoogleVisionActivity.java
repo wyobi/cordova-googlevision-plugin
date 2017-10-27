@@ -1,4 +1,4 @@
-package com.erikeuserr.testapp;
+package com.erikeuserr;
 
 import android.Manifest;
 import android.app.Activity;
@@ -13,6 +13,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.TextView;
 
+import com.erikeuserr.testapp.R;
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.text.TextBlock;
@@ -20,12 +21,15 @@ import com.google.android.gms.vision.text.TextRecognizer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GoogleVisionActivity extends Activity {
     private SurfaceView cameraView;
     private TextView textView;
     private CameraSource cameraSource;
     private final int RequestCameraPermissionID = 1001;
+    private Pattern pattern;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -52,12 +56,16 @@ public class GoogleVisionActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        final Intent intent = getIntent();
+        final String regexPattern = intent.getStringExtra("regexPattern");
+
+        System.out.println("regex pattern " + regexPattern);
+        pattern = Pattern.compile(regexPattern);
+
         cameraView = (SurfaceView) findViewById(R.id.surface_view);
         textView = (TextView) findViewById(R.id.text_view);
 
         final Activity activity = this;
-
-
 
         TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
         if (!textRecognizer.isOperational()) {
@@ -108,17 +116,17 @@ public class GoogleVisionActivity extends Activity {
                 @Override
                 public void receiveDetections(Detector.Detections<TextBlock> detections) {
                     final SparseArray<TextBlock> items = detections.getDetectedItems();
+                    final ArrayList<String> filteredItems = filterItems(items);
 
-                    if(items.size() != 0)
+                    if(filteredItems.size() != 0)
                     {
                         textView.post(new Runnable() {
                             @Override
                             public void run() {
                                 StringBuilder stringBuilder = new StringBuilder();
-                                for(int i =0;i<items.size();++i)
+                                for(int i =0; i < filteredItems.size(); i++)
                                 {
-                                    TextBlock item = items.valueAt(i);
-                                    stringBuilder.append(item.getValue());
+                                    stringBuilder.append(filteredItems.get(i));
                                     stringBuilder.append("\n");
                                 }
 
@@ -127,7 +135,7 @@ public class GoogleVisionActivity extends Activity {
                         });
 
                         Intent intent = new Intent();
-                        intent.putStringArrayListExtra("detections", sparseArrayToList(items));
+                        intent.putStringArrayListExtra("detections", filteredItems);
                         setResult(RESULT_OK, intent);
                         finish();
                     }
@@ -136,13 +144,21 @@ public class GoogleVisionActivity extends Activity {
         }
     }
 
-    private ArrayList<String> sparseArrayToList(SparseArray<TextBlock> items){
-        final ArrayList<String> list = new ArrayList<String>();
+    private ArrayList<String> filterItems(SparseArray<TextBlock> items){
+        ArrayList<String> filteredItems = new ArrayList<String>();
 
-        for (int i = 0; i < items.size(); i++) {
-            list.add(items.valueAt(i).getValue());
+        for(int i =0; i<items.size(); i++)
+        {
+            TextBlock item = items.valueAt(i);
+            Matcher m  = pattern.matcher(item.getValue());
+
+            if(m.find()){
+                for(int j = 0; j < m.groupCount(); j++){
+                    filteredItems.add(m.group(j));
+                }
+            }
         }
 
-        return list;
+        return filteredItems;
     }
 }
