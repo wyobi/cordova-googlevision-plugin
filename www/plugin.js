@@ -8,4 +8,5 @@ var GoogleVisionPlugin = {
   }
 };
 
+
 module.exports = GoogleVisionPlugin;

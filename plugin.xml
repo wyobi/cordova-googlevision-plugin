@@ -2,7 +2,7 @@
 
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
     id="cordova-googlevision-plugin"
-    version="1.0.0">
+    version="1.0.7">
     <name>Cordova Google Vision Plugin</name>
     <description></description>
     <license>MIT</license>
@@ -37,8 +37,15 @@
       </config-file>
 
       <source-file src="src/android/com/erikeuserr/GoogleVisionActivity.java" target-dir="src/com/erikeuserr/" />
-      <resource-file src="src/android/com/erikeuserr/res/layout/activity_main.xml" target="res/layout/activity_main.xml" />
       <source-file src="src/android/com/erikeuserr/GoogleVisionPlugin.java" target-dir="src/com/erikeuserr/" />
+      <source-file src="src/android/com/erikeuserr/BarcodeText.java" target-dir="src/com/erikeuserr/" />
+      <source-file src="src/android/com/erikeuserr/BarcodeTextDetector.java" target-dir="src/com/erikeuserr/" />
+      <source-file src="src/android/com/erikeuserr/Element.java" target-dir="src/com/erikeuserr/" />
+      <source-file src="src/android/com/erikeuserr/Line.java" target-dir="src/com/erikeuserr/" />
+      <source-file src="src/android/com/erikeuserr/TextBlock.java" target-dir="src/com/erikeuserr/" />
+      <source-file src="src/android/com/erikeuserr/zza.java" target-dir="src/com/erikeuserr/" />
+
+      <resource-file src="src/android/com/erikeuserr/res/layout/activity_main.xml" target="res/layout/activity_main.xml" />
     </platform>
 
 </plugin>
