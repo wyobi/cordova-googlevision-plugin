@@ -23,13 +23,16 @@ public class GoogleVisionPlugin extends CordovaPlugin {
         if(action.equalsIgnoreCase("detect")) {
             this.callbackContext = callbackContext;
 
-            if(args.getString(0) != null){
+            if(args.getString(0) != null) {
+                GoogleVisionActivity.cordova = this.cordova;
+
                 final String regexPatternString = args.getString(0);
                 final Intent intent = new Intent(cordova.getActivity().getApplicationContext(), GoogleVisionActivity.class);
                 intent.putExtra("regexPattern", regexPatternString);
 
                 cordova.setActivityResultCallback (this);
                 cordova.getActivity().startActivityForResult(intent, 1);
+                
                 return true;
             }
         }

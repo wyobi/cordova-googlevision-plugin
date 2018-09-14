@@ -19,6 +19,8 @@ import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 
+import org.apache.cordova.CordovaInterface;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class GoogleVisionActivity extends Activity {
+
     private SurfaceView cameraView;
     private TextView textView;
     private CameraSource cameraSource;
@@ -36,6 +39,8 @@ public class GoogleVisionActivity extends Activity {
     private Pattern pattern;
     private final NoDuplicatesList<String> foundBarcodesAndText = new NoDuplicatesList<String>();
     private boolean isTaskRunning;
+
+    public static CordovaInterface cordova;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -56,10 +61,14 @@ public class GoogleVisionActivity extends Activity {
         }
     }
 
+    private int getAppResource(String name, String type) {
+        return cordova.getActivity().getResources().getIdentifier(name, type, cordova.getActivity().getPackageName());
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(getAppResource("activity_main", "layout"));
 
         final Intent intent = getIntent();
         final String regexPattern = intent.getStringExtra("regexPattern");
@@ -67,8 +76,8 @@ public class GoogleVisionActivity extends Activity {
         System.out.println("regex pattern " + regexPattern);
         pattern = Pattern.compile(regexPattern);
 
-        cameraView = (SurfaceView) findViewById(R.id.surface_view);
-        textView = (TextView) findViewById(R.id.text_view);
+        cameraView = (SurfaceView) findViewById(getAppResource("surface_view", "id"));
+        textView = (TextView) findViewById(getAppResource("text_view", "id"));
 
         final Activity activity = this;
 
