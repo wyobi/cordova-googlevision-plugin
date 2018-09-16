@@ -39,12 +39,6 @@
 
       <source-file src="src/android/com/erikeuserr/GoogleVisionActivity.java" target-dir="src/com/erikeuserr/" />
       <source-file src="src/android/com/erikeuserr/GoogleVisionPlugin.java" target-dir="src/com/erikeuserr/" />
-      <source-file src="src/android/com/erikeuserr/BarcodeText.java" target-dir="src/com/erikeuserr/" />
-      <source-file src="src/android/com/erikeuserr/BarcodeTextDetector.java" target-dir="src/com/erikeuserr/" />
-      <source-file src="src/android/com/erikeuserr/Element.java" target-dir="src/com/erikeuserr/" />
-      <source-file src="src/android/com/erikeuserr/Line.java" target-dir="src/com/erikeuserr/" />
-      <source-file src="src/android/com/erikeuserr/TextBlock.java" target-dir="src/com/erikeuserr/" />
-      <source-file src="src/android/com/erikeuserr/zza.java" target-dir="src/com/erikeuserr/" />
 
       <resource-file src="src/android/com/erikeuserr/res/layout/activity_main.xml" target="res/layout/activity_main.xml" />
     </platform>
