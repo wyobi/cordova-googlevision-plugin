@@ -47,8 +47,6 @@
       <source-file src="src/android/com/erikeuserr/zza.java" target-dir="src/com/erikeuserr/" />
 
       <resource-file src="src/android/com/erikeuserr/res/layout/activity_main.xml" target="res/layout/activity_main.xml" />
-
-      <framework src="src/android/com/erikeuserr/googlevision.gradle" custom="true" type="gradleReference" />
     </platform>
 
 </plugin>

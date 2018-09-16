@@ -2,10 +2,10 @@ package com.erikeuserr;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
@@ -13,11 +13,14 @@ import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
-import com.google.android.gms.vision.barcode.Barcode;
-import com.google.android.gms.vision.barcode.BarcodeDetector;
+import com.google.android.gms.vision.text.TextBlock;
+import com.google.android.gms.vision.text.TextRecognizer;
 
 import org.apache.cordova.CordovaInterface;
 
@@ -34,10 +37,10 @@ public class GoogleVisionActivity extends Activity {
 
     private SurfaceView cameraView;
     private TextView textView;
-    private CameraSource cameraSource;
+    private static CameraSource cameraSource;
     private final int RequestCameraPermissionID = 1001;
     private Pattern pattern;
-    private final NoDuplicatesList<String> foundBarcodesAndText = new NoDuplicatesList<String>();
+    private final NoDuplicatesList<String> foundText = new NoDuplicatesList<String>();
     private boolean isTaskRunning;
 
     public static CordovaInterface cordova;
@@ -62,7 +65,7 @@ public class GoogleVisionActivity extends Activity {
     }
 
     private int getAppResource(String name, String type) {
-        return cordova.getActivity().getResources().getIdentifier(name, type, cordova.getActivity().getPackageName());
+        return this.getResources().getIdentifier(name, type, this.getPackageName());
     }
 
     @Override
@@ -81,19 +84,62 @@ public class GoogleVisionActivity extends Activity {
 
         final Activity activity = this;
 
-        BarcodeTextDetector barcodeTextRecognizer = new BarcodeTextDetector.Builder(getApplicationContext())
-                .setBarcodeFormats(Barcode.EAN_13)
-                .build();
+        GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = googleApiAvailability.isGooglePlayServicesAvailable(getApplicationContext());
+        if (resultCode != ConnectionResult.SUCCESS) {
+            googleApiAvailability.getErrorDialog(this, resultCode, 1000).show();
+            return;
+        }
 
-        if (!barcodeTextRecognizer.isOperational()) {
+        TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext())
+                .build();
+        textRecognizer.setProcessor(new Detector.Processor<TextBlock>() {
+            @Override
+            public void release() {
+
+            }
+
+            @Override
+            public void receiveDetections(Detector.Detections<TextBlock> detections) {
+                final SparseArray<TextBlock> items = detections.getDetectedItems();
+
+                if(items.get(1) != null){
+                    final TextBlock foundItems = items.get(1);
+
+                    textView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            StringBuilder stringBuilder = new StringBuilder();
+                            final String displayValue = foundItems.getValue();
+                            stringBuilder.append(displayValue + "\n");
+                            foundText.add(displayValue);
+
+                            textView.setText(stringBuilder.toString());
+                        }
+                    });
+
+                    // Text recognition.
+                    final ArrayList<String> filteredTextBlocks = filterItems(items);
+                    foundText.addAll(filteredTextBlocks);
+
+                    if(!foundText.isEmpty() && !isTaskRunning){
+                        sendDetectionsToWebView();
+                        isTaskRunning = true;
+                    }
+                }
+            }
+        });
+
+        if (!textRecognizer.isOperational()) {
             Log.w("MainActivity", "Detector dependencies are not yet available");
+            Toast.makeText(getApplicationContext(), "Detector dependencies are not yet available", Toast.LENGTH_LONG).show();
         } else {
 
-            cameraSource = new CameraSource.Builder(getApplicationContext(), barcodeTextRecognizer)
+            cameraSource = new CameraSource.Builder(this, textRecognizer)
                     .setFacing(CameraSource.CAMERA_FACING_BACK)
                     .setRequestedPreviewSize(1280, 1024)
                     .setRequestedFps(2.0f)
-                    .setAutoFocusEnabled(true)
+                    //.setAutoFocusEnabled(true)
                     .build();
             cameraView.getHolder().addCallback(new SurfaceHolder.Callback() {
                 @Override
@@ -122,59 +168,6 @@ public class GoogleVisionActivity extends Activity {
                     cameraSource.stop();
                 }
             });
-
-            barcodeTextRecognizer.setProcessor(new Detector.Processor<BarcodeText>() {
-                @Override
-                public void release() {
-
-                }
-
-                @Override
-                public void receiveDetections(Detector.Detections<BarcodeText> detections) {
-                    final SparseArray<BarcodeText> items = detections.getDetectedItems();
-
-                    if(items.get(1) != null){
-                        final BarcodeText foundItems = items.get(1);
-
-                        // Barcodes.
-                        textView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                StringBuilder stringBuilder = new StringBuilder();
-                                for(int i =0; i < foundItems.getBarcodes().size(); i++) {
-                                    final String displayValue = foundItems.getBarcodes().valueAt(i).displayValue;
-                                    stringBuilder.append(displayValue + "\n");
-                                    foundBarcodesAndText.add(displayValue);
-                                }
-
-                                textView.setText(stringBuilder.toString());
-                            }
-                        });
-
-                        // Text recognition.
-                        final ArrayList<String> filteredTextBlocks = filterItems(foundItems.getTextBlocks());
-
-                        textView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                StringBuilder stringBuilder = new StringBuilder();
-                                for(int i =0; i < filteredTextBlocks.size(); i++) {
-                                    stringBuilder.append(filteredTextBlocks.get(i) + "\n");
-                                }
-
-                                textView.setText(stringBuilder.toString());
-                            }
-                        });
-
-                        foundBarcodesAndText.addAll(filteredTextBlocks);
-
-                        if(!foundBarcodesAndText.isEmpty() && !isTaskRunning){
-                            sendDetectionsToWebView();
-                            isTaskRunning = true;
-                        }
-                    }
-                }
-            });
         }
     }
 
@@ -183,7 +176,7 @@ public class GoogleVisionActivity extends Activity {
             @Override
             public void run() {
                 Intent intent = new Intent();
-                intent.putStringArrayListExtra("detections", foundBarcodesAndText);
+                intent.putStringArrayListExtra("detections", foundText);
                 setResult(RESULT_OK, intent);
                 finish();
             }

@@ -1,3 +1,7 @@
+repositories{    
+  jcenter()
+}
+
 dependencies {
-    compile 'com.google.android.gms:play-services-vision:9.8.0'
+    compile 'com.google.android.gms:play-services-vision:15.0.2'
 }
