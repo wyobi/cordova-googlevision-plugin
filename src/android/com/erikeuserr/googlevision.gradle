@@ -1,0 +1,13 @@
+repositories{    
+  jcenter()
+}
+
+dependencies {
+    compile 'com.google.android.gms:play-services-vision:15.0.2'
+}
+
+android {
+  packagingOptions {
+
+  }
+}

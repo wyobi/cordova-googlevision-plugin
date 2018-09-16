@@ -27,6 +27,7 @@
       <!-- Add camera permission to manifest -->
       <config-file target="AndroidManifest.xml" parent="/*">
         <uses-permission android:name="android.permission.CAMERA" />
+        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="ocr" />
       </config-file>
 
       <config-file target="res/xml/config.xml" parent="/*">
@@ -46,6 +47,8 @@
       <source-file src="src/android/com/erikeuserr/zza.java" target-dir="src/com/erikeuserr/" />
 
       <resource-file src="src/android/com/erikeuserr/res/layout/activity_main.xml" target="res/layout/activity_main.xml" />
+
+      <framework src="src/android/com/erikeuserr/googlevision.gradle" custom="true" type="gradleReference" />
     </platform>
 
 </plugin>
