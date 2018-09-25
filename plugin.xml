@@ -22,12 +22,13 @@
       <!-- Add the GoogleVisionScanner activity to the manifest -->
       <config-file target="AndroidManifest.xml" parent="/manifest/application">
         <activity android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale" android:label="@string/activity_name" android:launchMode="singleTop" android:name="com.erikeuserr.GoogleVisionActivity" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" android:windowSoftInputMode="adjustResize"></activity>
+        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="ocr" />
+        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
       </config-file>
       
       <!-- Add camera permission to manifest -->
       <config-file target="AndroidManifest.xml" parent="/*">
         <uses-permission android:name="android.permission.CAMERA" />
-        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="ocr" />
       </config-file>
 
       <config-file target="res/xml/config.xml" parent="/*">
