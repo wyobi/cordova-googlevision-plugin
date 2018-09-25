@@ -102,26 +102,19 @@ public class GoogleVisionActivity extends Activity {
             @Override
             public void receiveDetections(Detector.Detections<TextBlock> detections) {
                 final SparseArray<TextBlock> items = detections.getDetectedItems();
-
-                if(items.get(1) != null){
-                    final TextBlock foundItems = items.get(1);
-
+                final ArrayList<String> filteredTextBlocks = filterItems(items);
+                if(!filteredTextBlocks.isEmpty()){
                     textView.post(new Runnable() {
                         @Override
                         public void run() {
                             StringBuilder stringBuilder = new StringBuilder();
-                            final String displayValue = foundItems.getValue();
+                            final String displayValue = filteredTextBlocks.get(0);
                             stringBuilder.append(displayValue + "\n");
-                            foundText.add(displayValue);
-
                             textView.setText(stringBuilder.toString());
                         }
                     });
 
-                    // Text recognition.
-                    final ArrayList<String> filteredTextBlocks = filterItems(items);
                     foundText.addAll(filteredTextBlocks);
-
                     if(!foundText.isEmpty() && !isTaskRunning){
                         sendDetectionsToWebView();
                         isTaskRunning = true;
@@ -139,7 +132,7 @@ public class GoogleVisionActivity extends Activity {
                     .setFacing(CameraSource.CAMERA_FACING_BACK)
                     .setRequestedPreviewSize(1280, 1024)
                     .setRequestedFps(2.0f)
-                    //.setAutoFocusEnabled(true)
+                    .setAutoFocusEnabled(true)
                     .build();
             cameraView.getHolder().addCallback(new SurfaceHolder.Callback() {
                 @Override
@@ -148,7 +141,7 @@ public class GoogleVisionActivity extends Activity {
                         if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
 
                             ActivityCompat.requestPermissions(activity,
-                                    new String[]{Manifest.permission.CAMERA},
+                                    new String[]{ Manifest.permission.CAMERA },
                                     RequestCameraPermissionID);
                             return;
                         }
@@ -189,11 +182,18 @@ public class GoogleVisionActivity extends Activity {
         for(int i =0; i<items.size(); i++)
         {
             TextBlock item = items.valueAt(i);
-            Matcher m  = pattern.matcher(item.getValue());
+            if(item != null) {
+                if(pattern != null && !pattern.pattern().equalsIgnoreCase("null")) {
+                    Matcher m  = pattern.matcher(item.getValue());
 
-            if(m.find()){
-                for(int j = 0; j < m.groupCount(); j++){
-                    filteredItems.add(m.group(j));
+                    if(m.find()){
+                        for(int j = 0; j < m.groupCount(); j++){
+                            filteredItems.add(m.group(j));
+                        }
+                    }
+                }
+                else {
+                    filteredItems.add(item.getValue());
                 }
             }
         }
