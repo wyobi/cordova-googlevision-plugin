@@ -40,12 +40,13 @@ public class GoogleVisionPlugin extends CordovaPlugin {
         return false;
     }
 
-
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if(requestCode == 1 && resultCode == RESULT_OK){
             callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONArray(intent.getStringArrayListExtra("detections"))));
+        }
+        else {
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.NO_RESULT)));
         }
     }
 }
