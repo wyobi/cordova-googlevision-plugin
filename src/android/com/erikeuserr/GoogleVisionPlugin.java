@@ -46,7 +46,7 @@ public class GoogleVisionPlugin extends CordovaPlugin {
             callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONArray(intent.getStringArrayListExtra("detections"))));
         }
         else {
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.NO_RESULT)));
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.NO_RESULT));
         }
     }
 }
