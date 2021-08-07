@@ -186,10 +186,8 @@ public class GoogleVisionActivity extends Activity {
                 if(pattern != null && !pattern.pattern().equalsIgnoreCase("null")) {
                     Matcher m  = pattern.matcher(item.getValue());
 
-                    if(m.find()){
-                        for(int j = 0; j < m.groupCount(); j++){
-                            filteredItems.add(m.group(j));
-                        }
+                    if(m.find() && item.getValue() != null && item.getValue().length() > 0) {
+                        filteredItems.add(item.getValue());
                     }
                 }
                 else {
