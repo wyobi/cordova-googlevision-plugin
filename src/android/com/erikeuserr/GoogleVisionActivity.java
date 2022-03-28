@@ -6,8 +6,8 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
@@ -19,10 +19,12 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
+import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 
 import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.LOG;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ public class GoogleVisionActivity extends Activity {
     private boolean isTaskRunning;
 
     public static CordovaInterface cordova;
+    private static boolean sTorchState = false;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -66,6 +69,17 @@ public class GoogleVisionActivity extends Activity {
 
     private int getAppResource(String name, String type) {
         return this.getResources().getIdentifier(name, type, this.getPackageName());
+    }
+
+    public void toggleTorch(View view) {
+        sTorchState = !sTorchState;
+
+        if (sTorchState) {
+            cameraSource.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+        }
+        else {
+            cameraSource.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+        }
     }
 
     @Override
@@ -127,7 +141,6 @@ public class GoogleVisionActivity extends Activity {
             Log.w("MainActivity", "Detector dependencies are not yet available");
             Toast.makeText(getApplicationContext(), "Detector dependencies are not yet available", Toast.LENGTH_LONG).show();
         } else {
-
             cameraSource = new CameraSource.Builder(this, textRecognizer)
                     .setFacing(CameraSource.CAMERA_FACING_BACK)
                     .setRequestedPreviewSize(1280, 1024)
@@ -139,9 +152,8 @@ public class GoogleVisionActivity extends Activity {
                 public void surfaceCreated(SurfaceHolder surfaceHolder) {
                     try {
                         if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-
                             ActivityCompat.requestPermissions(activity,
-                                    new String[]{ Manifest.permission.CAMERA },
+                                    new String[] { Manifest.permission.CAMERA },
                                     RequestCameraPermissionID);
                             return;
                         }
@@ -178,21 +190,45 @@ public class GoogleVisionActivity extends Activity {
 
     private ArrayList<String> filterItems(SparseArray<TextBlock> items){
         ArrayList<String> filteredItems = new ArrayList<String>();
+        if(items.size() == 0) {
+            return filteredItems;
+        }
 
-        for(int i =0; i<items.size(); i++)
-        {
+        int count = 0;
+        for(int i =0; i<items.size(); i++) {
             TextBlock item = items.valueAt(i);
             if(item != null) {
                 if(pattern != null && !pattern.pattern().equalsIgnoreCase("null")) {
-                    Matcher m  = pattern.matcher(item.getValue());
-
-                    if(m.find() && item.getValue() != null && item.getValue().length() > 0) {
-                        filteredItems.add(item.getValue());
+                    Matcher matcher  = pattern.matcher(item.getValue());
+                    while (matcher.find()) {
+                        filteredItems.add(matcher.group());
                     }
                 }
                 else {
                     filteredItems.add(item.getValue());
+                    count++;
                 }
+            }
+        }
+
+        if(count == 0 && pattern != null) {
+            StringBuilder sb = new StringBuilder();
+            for(int i =0; i<items.size(); i++) {
+                TextBlock item = items.valueAt(i);
+                sb.append(item.getValue());
+                if(i < items.size() - 1) {
+                    sb.append('\n');
+                }
+            }
+
+            String str = sb.toString();
+            if(str.indexOf('<') > 0) { //Issues with MRZ TODO upgrade OCR
+                str = str.replace(" <", "<");
+            }
+
+            Matcher m = pattern.matcher(str);
+            while (m.find()) {
+                filteredItems.add(m.group());
             }
         }
 
