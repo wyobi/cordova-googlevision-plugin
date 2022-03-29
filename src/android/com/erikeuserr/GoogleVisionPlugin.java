@@ -15,6 +15,7 @@ import static android.app.Activity.RESULT_OK;
 
 public class GoogleVisionPlugin extends CordovaPlugin {
     private CallbackContext callbackContext;
+    Boolean detectOne = false;
 
     //    1. Add to build.gradle (app) compile 'com.google.android.gms:play-services-vision:9.8.0'
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -29,7 +30,7 @@ public class GoogleVisionPlugin extends CordovaPlugin {
                 GoogleVisionActivity.cordova = this.cordova;
 
                 final String regexPatternString = args.getString(0);
-                final Boolean detectOne = args.getBoolean(1);
+                detectOne = args.getBoolean(1);
                 final Boolean takePhoto = args.getBoolean(2);
 
                 final Intent intent = new Intent(cordova.getActivity().getApplicationContext(), GoogleVisionActivity.class);
@@ -52,11 +53,16 @@ public class GoogleVisionPlugin extends CordovaPlugin {
         if(requestCode == 1 && resultCode == RESULT_OK){
             JSONObject obj = new JSONObject();
             try {
-                obj.put("detections", new JSONArray(intent.getStringArrayListExtra("detections")));
+                if(detectOne) {
+                    obj.put("detections", intent.getStringExtra("detections"));
+                }
+                else {
+                    obj.put("detections", new JSONArray(intent.getStringArrayListExtra("detections")));
+                }
 
                 String photo = intent.getStringExtra("photo");
                 if(photo != null && photo.length() > 0) {
-                    obj.put("photo", intent.getStringArrayListExtra("photo"));
+                    obj.put("photo", intent.getStringExtra("photo"));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();

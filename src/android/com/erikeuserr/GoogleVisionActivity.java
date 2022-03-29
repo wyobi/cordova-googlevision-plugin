@@ -226,7 +226,18 @@ public class GoogleVisionActivity extends Activity {
                     @Override
                     public void run() {
                         Intent intent = new Intent();
-                        intent.putStringArrayListExtra("detections", foundText);
+                        if(detectOne) {
+                            if(foundText.size() > 0) {
+                                intent.putExtra("detections", foundText.get(0));
+                            }
+                            else {
+                                intent.putExtra("detections", "");
+                            }
+                        }
+                        else {
+                            intent.putStringArrayListExtra("detections", foundText);
+                        }
+                        
                         if(bytes != null && bytes.length > 0) {
                             String encodedBase64 = Base64.encodeToString(bytes, Base64.DEFAULT);
                             intent.putExtra("photo", encodedBase64);
@@ -242,7 +253,17 @@ public class GoogleVisionActivity extends Activity {
                 @Override
                 public void run() {
                     Intent intent = new Intent();
-                    intent.putStringArrayListExtra("detections", foundText);
+                    if(detectOne) {
+                        if(foundText.size() > 0) {
+                            intent.putExtra("detections", foundText.get(0));
+                        }
+                        else {
+                            intent.putExtra("detections", "");
+                        }
+                    }
+                    else {
+                        intent.putStringArrayListExtra("detections", foundText);
+                    }
                     setResult(RESULT_OK, intent);
                     finish();
                 }
