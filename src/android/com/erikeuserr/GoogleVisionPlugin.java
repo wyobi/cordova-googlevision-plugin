@@ -27,8 +27,13 @@ public class GoogleVisionPlugin extends CordovaPlugin {
                 GoogleVisionActivity.cordova = this.cordova;
 
                 final String regexPatternString = args.getString(0);
+                final Boolean detectOne = args.getBoolean(1);
+                final Boolean takePhoto = args.getBoolean(2);
+
                 final Intent intent = new Intent(cordova.getActivity().getApplicationContext(), GoogleVisionActivity.class);
                 intent.putExtra("regexPattern", regexPatternString);
+                intent.putExtra("detectOne", detectOne);
+                intent.putExtra("takePhoto", takePhoto);
 
                 cordova.setActivityResultCallback (this);
                 cordova.getActivity().startActivityForResult(intent, 1);
