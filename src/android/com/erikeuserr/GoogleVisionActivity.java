@@ -5,13 +5,20 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+
+import android.util.Base64;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,9 +34,11 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.LOG;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
@@ -47,6 +56,8 @@ public class GoogleVisionActivity extends Activity {
 
     public static CordovaInterface cordova;
     private static boolean sTorchState = false;
+    private boolean detectOne = false;
+    private boolean takePhoto = false;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -73,13 +84,40 @@ public class GoogleVisionActivity extends Activity {
 
     public void toggleTorch(View view) {
         sTorchState = !sTorchState;
+        Camera camera = getCameraObject(cameraSource);
+        if(camera == null) {
+            return;
+        }
+        try {
+            Camera.Parameters parameters = camera.getParameters();
+            parameters.setFlashMode(sTorchState ? "torch" : "off");
+            camera.setParameters(parameters);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-        if (sTorchState) {
-            cameraSource.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+    //Terrible hack as the Vision CameraSource no longer supports flash access
+    private Camera getCameraObject(CameraSource cameraSource) {
+        Field[] cFields = cameraSource.getClass().getDeclaredFields();
+        Camera _cam = null;
+        try {
+            for(int i = 0; i < cFields.length; i++) {
+                Field item = cFields[i];
+                if (item.getType().getName().equals("android.hardware.Camera")) {
+                    item.setAccessible(true);
+                    try {
+                        _cam = (Camera)item.get(cameraSource);
+                        break;
+                    } catch (Exception e) {
+                       e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        else {
-            cameraSource.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-        }
+        return _cam;
     }
 
     @Override
@@ -89,6 +127,9 @@ public class GoogleVisionActivity extends Activity {
 
         final Intent intent = getIntent();
         final String regexPattern = intent.getStringExtra("regexPattern");
+
+        detectOne = intent.getBooleanExtra("detectOne", false);
+        takePhoto = intent.getBooleanExtra("takePhoto", false);
 
         System.out.println("regex pattern " + regexPattern);
         pattern = Pattern.compile(regexPattern);
@@ -144,7 +185,7 @@ public class GoogleVisionActivity extends Activity {
             cameraSource = new CameraSource.Builder(this, textRecognizer)
                     .setFacing(CameraSource.CAMERA_FACING_BACK)
                     .setRequestedPreviewSize(1280, 1024)
-                    .setRequestedFps(2.0f)
+                    .setRequestedFps(4.0f)
                     .setAutoFocusEnabled(true)
                     .build();
             cameraView.getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -176,16 +217,37 @@ public class GoogleVisionActivity extends Activity {
         }
     }
 
-    private void sendDetectionsToWebView(){
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                Intent intent = new Intent();
-                intent.putStringArrayListExtra("detections", foundText);
-                setResult(RESULT_OK, intent);
-                finish();
-            }
-        }, 2000);
+    private void sendDetectionsToWebView() {
+        if(takePhoto) {
+            cameraSource.takePicture(() -> {
+
+            }, bytes -> {
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        Intent intent = new Intent();
+                        intent.putStringArrayListExtra("detections", foundText);
+                        if(bytes != null && bytes.length > 0) {
+                            String encodedBase64 = Base64.encodeToString(bytes, Base64.DEFAULT);
+                            intent.putExtra("photo", encodedBase64);
+                        }
+                        setResult(RESULT_OK, intent);
+                        finish();
+                    }
+                }, 2000);
+            });
+        }
+        else {
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    Intent intent = new Intent();
+                    intent.putStringArrayListExtra("detections", foundText);
+                    setResult(RESULT_OK, intent);
+                    finish();
+                }
+            }, 2000);
+        }
     }
 
     private ArrayList<String> filterItems(SparseArray<TextBlock> items){
