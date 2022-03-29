@@ -48,10 +48,16 @@ public class GoogleVisionPlugin extends CordovaPlugin {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if(requestCode == 1 && resultCode == RESULT_OK){
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONArray(intent.getStringArrayListExtra("detections"))));
+            JSONObject obj = new JSONObject();
+            obj.put("detections", new JSONArray(intent.getStringArrayListExtra("detections")));
+            String photo = intent.getStringArrayListExtra("photo");
+            if(photo != null && photo.length > 0) {
+                obj.put("photo", intent.getStringArrayListExtra("photo"));
+            }
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, obj));
         }
         else {
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONArray()));
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, new JSONObject()));
         }
     }
 }
