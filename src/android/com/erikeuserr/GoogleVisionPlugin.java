@@ -7,6 +7,8 @@ import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.Intent;
 
 import static android.app.Activity.RESULT_OK;
@@ -49,10 +51,15 @@ public class GoogleVisionPlugin extends CordovaPlugin {
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if(requestCode == 1 && resultCode == RESULT_OK){
             JSONObject obj = new JSONObject();
-            obj.put("detections", new JSONArray(intent.getStringArrayListExtra("detections")));
-            String photo = intent.getStringArrayListExtra("photo");
-            if(photo != null && photo.length > 0) {
-                obj.put("photo", intent.getStringArrayListExtra("photo"));
+            try {
+                obj.put("detections", new JSONArray(intent.getStringArrayListExtra("detections")));
+
+                String photo = intent.getStringExtra("photo");
+                if(photo != null && photo.length() > 0) {
+                    obj.put("photo", intent.getStringArrayListExtra("photo"));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
             callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, obj));
         }
