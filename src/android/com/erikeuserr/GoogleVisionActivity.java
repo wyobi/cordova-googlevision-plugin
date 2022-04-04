@@ -5,17 +5,21 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 import android.util.Base64;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -45,7 +49,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class GoogleVisionActivity extends Activity {
-
     private SurfaceView cameraView;
     private TextView textView;
     private static CameraSource cameraSource;
@@ -53,6 +56,7 @@ public class GoogleVisionActivity extends Activity {
     private Pattern pattern;
     private final NoDuplicatesList<String> foundText = new NoDuplicatesList<String>();
     private boolean isTaskRunning;
+    private int mCameraFacing = CameraSource.CAMERA_FACING_BACK;
 
     public static CordovaInterface cordova;
     private static boolean sTorchState = false;
@@ -85,7 +89,7 @@ public class GoogleVisionActivity extends Activity {
     public void toggleTorch(View view) {
         sTorchState = !sTorchState;
         Camera camera = getCameraObject(cameraSource);
-        if(camera == null) {
+        if (camera == null) {
             return;
         }
         try {
@@ -102,15 +106,15 @@ public class GoogleVisionActivity extends Activity {
         Field[] cFields = cameraSource.getClass().getDeclaredFields();
         Camera _cam = null;
         try {
-            for(int i = 0; i < cFields.length; i++) {
+            for (int i = 0; i < cFields.length; i++) {
                 Field item = cFields[i];
                 if (item.getType().getName().equals("android.hardware.Camera")) {
                     item.setAccessible(true);
                     try {
-                        _cam = (Camera)item.get(cameraSource);
+                        _cam = (Camera) item.get(cameraSource);
                         break;
                     } catch (Exception e) {
-                       e.printStackTrace();
+                        e.printStackTrace();
                     }
                 }
             }
@@ -158,7 +162,7 @@ public class GoogleVisionActivity extends Activity {
             public void receiveDetections(Detector.Detections<TextBlock> detections) {
                 final SparseArray<TextBlock> items = detections.getDetectedItems();
                 final ArrayList<String> filteredTextBlocks = filterItems(items);
-                if(!filteredTextBlocks.isEmpty()){
+                if (!filteredTextBlocks.isEmpty()) {
                     textView.post(new Runnable() {
                         @Override
                         public void run() {
@@ -170,7 +174,7 @@ public class GoogleVisionActivity extends Activity {
                     });
 
                     foundText.addAll(filteredTextBlocks);
-                    if(!foundText.isEmpty() && !isTaskRunning){
+                    if (!foundText.isEmpty() && !isTaskRunning) {
                         sendDetectionsToWebView();
                         isTaskRunning = true;
                     }
@@ -178,12 +182,13 @@ public class GoogleVisionActivity extends Activity {
             }
         });
 
+        final Activity thisActivity = this;
         if (!textRecognizer.isOperational()) {
             Log.w("MainActivity", "Detector dependencies are not yet available");
             Toast.makeText(getApplicationContext(), "Detector dependencies are not yet available", Toast.LENGTH_LONG).show();
         } else {
             cameraSource = new CameraSource.Builder(this, textRecognizer)
-                    .setFacing(CameraSource.CAMERA_FACING_BACK)
+                    .setFacing(mCameraFacing)
                     .setRequestedPreviewSize(1280, 1024)
                     .setRequestedFps(4.0f)
                     .setAutoFocusEnabled(true)
@@ -194,7 +199,7 @@ public class GoogleVisionActivity extends Activity {
                     try {
                         if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                             ActivityCompat.requestPermissions(activity,
-                                    new String[] { Manifest.permission.CAMERA },
+                                    new String[]{Manifest.permission.CAMERA},
                                     RequestCameraPermissionID);
                             return;
                         }
@@ -206,7 +211,23 @@ public class GoogleVisionActivity extends Activity {
 
                 @Override
                 public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+                    try {
 
+                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(activity,
+                                    new String[]{Manifest.permission.CAMERA},
+                                    RequestCameraPermissionID);
+                            return;
+                        }
+
+                        Camera camera = getCameraObject(cameraSource);
+                        setCameraDisplayOrientation(thisActivity, camera);
+
+                        cameraSource.stop();
+                        cameraSource.start(cameraView.getHolder());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 @Override
@@ -215,6 +236,42 @@ public class GoogleVisionActivity extends Activity {
                 }
             });
         }
+    }
+
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        Camera camera = getCameraObject(cameraSource);
+
+//        if (isPreviewRunning) {
+//            camera.stopPreview();
+//        }
+
+        setCameraDisplayOrientation(this, camera);
+
+        //previewCamera();
+    }
+
+    public void setCameraDisplayOrientation(Activity activity, Camera camera) {
+        android.hardware.Camera.CameraInfo info =
+                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(mCameraFacing, info);
+        int rotation = activity.getWindowManager().getDefaultDisplay()
+                .getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0: degrees = 0; break;
+            case Surface.ROTATION_90: degrees = 90; break;
+            case Surface.ROTATION_180: degrees = 180; break;
+            case Surface.ROTATION_270: degrees = 270; break;
+        }
+
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        camera.setDisplayOrientation(result);
     }
 
     private void sendDetectionsToWebView() {
@@ -278,7 +335,7 @@ public class GoogleVisionActivity extends Activity {
         }
 
         int count = 0;
-        for(int i =0; i<items.size(); i++) {
+        for(int i = 0; i < items.size(); i++) {
             TextBlock item = items.valueAt(i);
             if(item != null) {
                 if(pattern != null && !pattern.pattern().equalsIgnoreCase("null")) {
@@ -296,7 +353,7 @@ public class GoogleVisionActivity extends Activity {
 
         if(count == 0 && pattern != null) {
             StringBuilder sb = new StringBuilder();
-            for(int i =0; i<items.size(); i++) {
+            for(int i = 0; i < items.size(); i++) {
                 TextBlock item = items.valueAt(i);
                 sb.append(item.getValue());
                 if(i < items.size() - 1) {
