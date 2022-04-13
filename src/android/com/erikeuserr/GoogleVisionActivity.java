@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.hardware.Camera;
@@ -37,6 +39,7 @@ import com.google.android.gms.vision.text.TextRecognizer;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.LOG;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -296,7 +299,13 @@ public class GoogleVisionActivity extends Activity {
                         }
                         
                         if(bytes != null && bytes.length > 0) {
-                            String encodedBase64 = Base64.encodeToString(bytes, Base64.DEFAULT);
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            Bitmap saveBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+
+                            saveBitmap = Bitmap.createScaledBitmap(saveBitmap, 1080, 810, false);
+                            saveBitmap.compress(Bitmap.CompressFormat.PNG, 75, baos);
+
+                            String encodedBase64 = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
                             intent.putExtra("photo", encodedBase64);
                         }
                         setResult(RESULT_OK, intent);
