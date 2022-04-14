@@ -303,7 +303,7 @@ public class GoogleVisionActivity extends Activity {
                             Bitmap saveBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
                             saveBitmap = Bitmap.createScaledBitmap(saveBitmap, 1080, 810, false);
-                            saveBitmap.compress(Bitmap.CompressFormat.PNG, 75, baos);
+                            saveBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos);
 
                             String encodedBase64 = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
                             intent.putExtra("photo", encodedBase64);
