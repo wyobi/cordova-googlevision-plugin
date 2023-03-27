@@ -44,6 +44,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
@@ -57,7 +59,7 @@ public class GoogleVisionActivity extends Activity {
     private static CameraSource cameraSource;
     private final int RequestCameraPermissionID = 1001;
     private Pattern pattern;
-    private final NoDuplicatesList<String> foundText = new NoDuplicatesList<String>();
+    private final LinkedHashSet<String> foundText = new LinkedHashSet<String>();
     private boolean isTaskRunning;
     private int mCameraFacing = CameraSource.CAMERA_FACING_BACK;
 
@@ -288,14 +290,20 @@ public class GoogleVisionActivity extends Activity {
                         Intent intent = new Intent();
                         if(detectOne) {
                             if(foundText.size() > 0) {
-                                intent.putExtra("detections", foundText.get(0));
+                                Iterator<String> iter = foundText.iterator();
+                                if (iter != null && iter.hasNext()) {
+                                    intent.putExtra("detections", iter.next());
+                                }
+                                else {
+                                    intent.putExtra("detections", "");
+                                }
                             }
                             else {
                                 intent.putExtra("detections", "");
                             }
                         }
                         else {
-                            intent.putStringArrayListExtra("detections", foundText);
+                            intent.putStringArrayListExtra("detections", new ArrayList<String>(foundText));
                         }
                         
                         if(bytes != null && bytes.length > 0) {
@@ -321,20 +329,36 @@ public class GoogleVisionActivity extends Activity {
                     Intent intent = new Intent();
                     if(detectOne) {
                         if(foundText.size() > 0) {
-                            intent.putExtra("detections", foundText.get(0));
+                            Iterator<String> iter = foundText.iterator();
+                            if (iter != null && iter.hasNext()) {
+                                intent.putExtra("detections", iter.next());
+                            }
+                            else {
+                                intent.putExtra("detections", "");
+                            }
                         }
                         else {
                             intent.putExtra("detections", "");
                         }
                     }
                     else {
-                        intent.putStringArrayListExtra("detections", foundText);
+                        intent.putStringArrayListExtra("detections", new ArrayList<String>(foundText));
                     }
                     setResult(RESULT_OK, intent);
                     finish();
                 }
             }, 2000);
         }
+    }
+
+    public static int countChar(String s, char c) {
+        int count = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == c) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private ArrayList<String> filterItems(SparseArray<TextBlock> items){
@@ -371,8 +395,10 @@ public class GoogleVisionActivity extends Activity {
             }
 
             String str = sb.toString();
-            if(str.indexOf('<') > 0) { //Issues with MRZ TODO upgrade OCR
-                str = str.replace(" <", "<");
+            if(countChar(str, '<') >= 4 && str.length() >= 88) {
+                if (str.indexOf('<') > 0) { //Issues with MRZ TODO upgrade OCR
+                    str = str.replace(" ", "");
+                }
             }
 
             Matcher m = pattern.matcher(str);
@@ -382,41 +408,5 @@ public class GoogleVisionActivity extends Activity {
         }
 
         return filteredItems;
-    }
-}
-
-class NoDuplicatesList<E> extends ArrayList<E> {
-    @Override
-    public boolean add(E e) {
-        if (this.contains(e)) {
-            return false;
-        }
-        else {
-            return super.add(e);
-        }
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends E> collection) {
-        Collection<E> copy = new LinkedList<E>(collection);
-        copy.removeAll(this);
-        return super.addAll(copy);
-    }
-
-    @Override
-    public boolean addAll(int index, Collection<? extends E> collection) {
-        Collection<E> copy = new LinkedList<E>(collection);
-        copy.removeAll(this);
-        return super.addAll(index, copy);
-    }
-
-    @Override
-    public void add(int index, E element) {
-        if (this.contains(element)) {
-            return;
-        }
-        else {
-            super.add(index, element);
-        }
     }
 }
